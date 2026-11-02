@@ -1,0 +1,135 @@
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Player = Players.LocalPlayer
+
+pcall(function()
+    game.CoreGui.NaconchinLockGUI:Destroy()
+end)
+
+-- Biến trạng thái Aim Lock & FOV
+local AimActive = false
+local FOVRadius = 150
+
+-- Drawing Circle hiển thị vùng FOV
+local Circle = Drawing.new("Circle")
+Circle.Visible = true
+Circle.Color = Color3.fromRGB(255, 0, 0)
+Circle.Thickness = 2
+Circle.NumSides = 100
+Circle.Filled = false
+Circle.Radius = FOVRadius
+
+RunService.RenderStepped:Connect(function()
+    local vp = workspace.CurrentCamera.ViewportSize
+    Circle.Position = Vector2.new(vp.X / 2, vp.Y / 2)
+    Circle.Visible = AimActive -- Chỉ hiện vòng tròn khi bật Aim Lock
+end)
+
+-- Tạo GUI chính
+local Gui = Instance.new("ScreenGui")
+Gui.Name = "NaconchinLockGUI"
+Gui.ResetOnSpawn = false
+Gui.Parent = game.CoreGui
+
+local Frame = Instance.new("Frame", Gui)
+Frame.Size = UDim2.new(0, 240, 0, 185)
+Frame.Position = UDim2.new(0.35, 0, 0.3, 0)
+Frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Frame.Active = true
+Frame.Draggable = true -- Cho phép kéo thả bảng menu trực tiếp
+Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 10)
+
+-- Viền cầu vồng cho Frame (dùng UIStroke)
+local RainbowStroke = Instance.new("UIStroke", Frame)
+RainbowStroke.Thickness = 3
+task.spawn(function()
+    while true do
+        for i = 0, 1, 0.01 do
+            RainbowStroke.Color = Color3.fromHSV(i, 1, 1)
+            task.wait(0.05)
+        end
+    end
+end)
+
+-- Tiêu đề
+local Title = Instance.new("TextLabel", Frame)
+Title.Size = UDim2.new(0.75, 0, 0, 35)
+Title.Position = UDim2.new(0.05, 0, 0, 5)
+Title.BackgroundTransparency = 1
+Title.Text = "✨ Naconchin Lock ✨"
+Title.TextColor3 = Color3.new(1, 1, 1)
+Title.Font = Enum.Font.GothamBold
+Title.TextScaled = true
+
+-- Nút ẩn (-)
+local MinimizeBtn = Instance.new("TextButton", Frame)
+MinimizeBtn.Size = UDim2.new(0, 25, 0, 25)
+MinimizeBtn.Position = UDim2.new(0.82, 0, 0, 10)
+MinimizeBtn.Text = "-"
+MinimizeBtn.TextSize = 18
+MinimizeBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+MinimizeBtn.TextColor3 = Color3.new(1, 1, 1)
+Instance.new("UICorner", MinimizeBtn).CornerRadius = UDim.new(0, 5)
+
+local isMinimized = false
+MinimizeBtn.MouseButton1Click:Connect(function()
+    isMinimized = not isMinimized
+    for _, child in ipairs(Frame:GetChildren()) do
+        if child ~= Title and child ~= MinimizeBtn and child ~= RainbowStroke and child.ClassName ~= "UICorner" then
+            child.Visible = not isMinimized
+        end
+    end
+    Frame.Size = isMinimized and UDim2.new(0, 240, 0, 45) or UDim2.new(0, 240, 0, 185)
+end)
+
+-- Nút Bật/Tắt Aim Lock (On/Off)
+local ToggleBtn = Instance.new("TextButton", Frame)
+ToggleBtn.Size = UDim2.new(0.9, 0, 0, 35)
+ToggleBtn.Position = UDim2.new(0.05, 0, 0, 45)
+ToggleBtn.Text = "Aim Lock: OFF ❌"
+ToggleBtn.TextScaled = true
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+ToggleBtn.TextColor3 = Color3.new(1, 1, 1)
+Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0, 6)
+
+ToggleBtn.MouseButton1Click:Connect(function()
+    AimActive = not AimActive
+    if AimActive then
+        ToggleBtn.Text = "Aim Lock: ON ✔"
+        ToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 180, 50)
+    else
+        ToggleBtn.Text = "Aim Lock: OFF ❌"
+        ToggleBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+    end
+end)
+
+-- Ô nhập FOV (Tối đa 300)
+local Box = Instance.new("TextBox", Frame)
+Box.Size = UDim2.new(0.9, 0, 0, 35)
+Box.Position = UDim2.new(0.05, 0, 0, 90)
+Box.PlaceholderText = "Nhập FOV (Max: 300)"
+Box.Text = tostring(FOVRadius)
+Box.TextScaled = true
+Box.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+Box.TextColor3 = Color3.new(1, 1, 1)
+Instance.new("UICorner", Box).CornerRadius = UDim.new(0, 6)
+
+-- Nút Áp dụng FOV
+local ApplyBtn = Instance.new("TextButton", Frame)
+ApplyBtn.Size = UDim2.new(0.9, 0, 0, 35)
+ApplyBtn.Position = UDim2.new(0.05, 0, 0, 135)
+ApplyBtn.Text = "Áp dụng FOV"
+ApplyBtn.TextScaled = true
+ApplyBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
+ApplyBtn.TextColor3 = Color3.new(1, 1, 1)
+Instance.new("UICorner", ApplyBtn).CornerRadius = UDim.new(0, 6)
+
+ApplyBtn.MouseButton1Click:Connect(function()
+    local val = tonumber(Box.Text)
+    if val then
+        FOVRadius = math.clamp(val, 10, 300) -- Giới hạn tối đa 300 theo yêu cầu
+        Circle.Radius = FOVRadius
+        Box.Text = tostring(FOVRadius)
+    end
+end)
